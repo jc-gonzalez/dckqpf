@@ -142,20 +142,27 @@ sleep 10
 
 k=0
 
-for f in ${DATA_FILES}; do
+while [ -d . ]; do
 
-    k=$((k + 1))
-    obsid=$(printf "%05d" $k)
+    for f in ${DATA_FILES}; do
 
-    d=$(dirname $f)
-    b=$(basename $f)
-    datafile=${INBOX_FLD}/${b:0:12}${obsid}${b:17}
+        k=$((k + 1))
+        obsid=$(printf "%05d" $k)
 
-    say  "  . Feeding data file ${datafile} . . ."
-    ln ${f} ${datafile}
+        d=$(dirname $f)
+        b=$(basename $f)
+        datafile=${INBOX_FLD}/${b:0:12}${obsid}${b:17}
+
+        say  "  . Feeding data file ${datafile} . . ."
+        ln ${f} ${datafile}
+
+        sleep 30
+
+    done
+
+    say  "  . Cleaning exited Docker containers . . ."
+    exitedCnts=$(docker ps -a |awk '/Exited \(0\).*minutes ago/')
+    docker rm ${exitedCnts}
     
-    sleep 30
-
 done
-
 
