@@ -113,6 +113,8 @@ OPTIND=1
 
 DATA_FILES=$*
 
+QPFWA=${TEST_DATA_FOLDER}/qpfwa
+
 #- Say hello
 greetings
 
@@ -126,8 +128,9 @@ bash ./DockerQPF-create.sh -d -p -c
 #=== Launch containers
 
 step "Launch containers"
+mkdir -p ${QPFWA}/db
 bash ./DockerQPF-launch.sh -K -z -b -p \
-     -d ${TEST_DATA_FOLDER} -q ${QDT_FOLDER}
+     -D ${QPFWA}/db -d ${TEST_DATA_FOLDER} -q ${QDT_FOLDER}
 
 #=== Feed data into container
 
@@ -137,7 +140,7 @@ for f in ${DATA_FILES}; do
     say  "    - $f"
 done
 
-INBOX_FLD=${TEST_DATA_FOLDER}/qpfwa/data/inbox
+INBOX_FLD=${QPFWA}/data/inbox
 sleep 10
 
 k=0

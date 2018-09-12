@@ -56,6 +56,7 @@ TEST="no"
 
 TEST_DATA_FOLDER=/data/Test_Data
 QDT_FOLDER=${TEST_DATA_FOLDER}/QDT-test
+PGOPTS=""
 
 src=0
 tgt=1
@@ -78,7 +79,8 @@ greetings () {
 }
 
 usage () {
-    local opts="[ -h ] [ -P ] [ -b ] [ -C ] [ -K ] [ -z ] [ -d <data> ] [ -q <qdt> ]"
+    local opts="[ -h ] [ -P ] [ -b ] [ -C ] [ -K ] [ -z ]"
+    opts="$opts [ -D <pgdat> ] [ -d <data> ] [ -q <qdt> ]"
     say "Usage: ${SCRIPT_NAME} $opts"
     say "where:"
     say "  -h         Show this usage message"
@@ -87,6 +89,7 @@ usage () {
     say "  -C         Clear DB"
     say "  -K         Kill running PostgreSQL & QPF Master Core Containers"
     say "  -z         Remove old Docker Containers"
+    say "  -D <pgdat> Sets alternative PGDATA folder to store PostgreSQL database"
     say "  -d <data>  Set data folder"
     say "  -q <qdt>   Set QDT folder"
     say ""
@@ -111,7 +114,7 @@ die () {
 #=== PARSE COMMAND LINE OPTIONS =====================================
 
 #- Parse command line and display grettings
-while getopts :hpbCKztd:q: OPT; do
+while getopts :hpbCKztD:d:q: OPT; do
     case $OPT in
         h|+h) usage
               ;;
@@ -126,6 +129,8 @@ while getopts :hpbCKztd:q: OPT; do
         z|+z) DCK_CLEAR_CONT="yes"
               ;;
         t|+t) TEST="yes"
+              ;;
+        D|+D) PGOPTS="-v PGDATA=$OPTARG"
               ;;
         d|+d) TEST_DATA_FOLDER="$OPTARG"
               ;;
@@ -200,7 +205,7 @@ fi
 #=== Run PostgreSQL container
 if [ "${LAUNCH_PSQL_SERVER}" == "yes" ]; then
     step "Launching PostgreSQL Server"
-    docker run -d --name ${QPF_PGSQL} ${PSQL_SERVER_IMG}
+    docker run -d --name ${QPF_PGSQL} ${PGOPTS} ${PSQL_SERVER_IMG}
     docker ps -a
     sleep 3
 fi
