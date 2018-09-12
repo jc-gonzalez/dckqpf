@@ -1,0 +1,84 @@
+#=========================================================i-*- dockerfile -*-==
+# VERSION:        2.1
+# DESCRIPTION:    Create image with COTS for QPF
+# AUTHOR:         J. C. Gonzalez <JCGonzalez@sciops.esa.int>
+# DATE:           2018/09/07
+# COMMENTS:
+#   This file describes how to build a container with all the COTS for QPF 2.1
+# BUILD:
+#   make -f Makefile.img DOCKERFILE=Dockerfile_qpfcots IMAGE_NAME=qpf-cots:2.1
+# USAGE:
+#   docker run --rm -t -i qpf-cots:2.1
+#
+# Copyright (C) 2015-2018 J C Gonzalez
+#==============================================================================
+
+# Base Docker image
+FROM centos
+MAINTAINER J C Gonzalez <JCGonzalez@sciops.esa.int>
+
+LABEL esa.euclid.soc.qla.content="QPF COTS" \
+      esa.euclid.soc.qla.version="2.1" \
+      esa.euclid.soc.qla.release-date="2018-09-05"
+
+# Variables
+ENV PSQL_PGDG https://download.postgresql.org/pub/repos/yum/10/redhat/rhel-7-x86_64/pgdg-centos10-10-2.noarch.rpm
+ENV PSQL_PKGS postgresql10-devel.x86_64
+
+# Get local files
+RUN mkdir /pkg
+COPY ./nanomsg-1.0.0.tar.gz /pkg/nanomsg-1.0.0.tar.gz
+
+# Create user and eucops users
+RUN useradd --create-home --shell /bin/bash user && \
+    echo 'user:password' | chpasswd && \
+    useradd --create-home --shell /bin/bash eucops && \
+    echo 'eucops:eu314clid' | chpasswd
+
+# Run COTS installation
+RUN yum update -y && \
+#
+# Development tools
+#
+    yum install -y gcc gcc-c++ make cmake wget && \
+#
+# PostgreSQL
+#
+    yum install -y ${PSQL_PGDG} && \
+    yum install -y ${PSQL_PKGS} libpq\* && \
+    ln -s /usr/pgsql-10 /usr/pgsql && \
+#
+# QT5 (not needed for QPF Core)
+#
+#    yum install -y qt5\* && \
+#
+# Nanomsg
+#
+    cd /pkg && tar xvzf nanomsg-1.0.0.tar.gz && cd nanomsg-1.0.0 && \
+    mkdir build && cd build && \
+    cmake -DCMAKE_BUILD_TYPE=Debug .. && \
+    make && make install && \
+#
+# PCRE2
+#
+    wget -O /pkg/pcre2-10.30.tar.gz https://ftp.pcre.org/pub/pcre/pcre2-10.30.tar.gz && \
+    cd /pkg && tar xvzf pcre2-10.30.tar.gz && cd pcre2-10.30 && \
+    ./configure --prefix=/usr/local && \
+    make && make install && \
+#
+# Curl
+#
+    yum -y install curl.x86_64 libcurl-devel.x86_64 && \
+#
+# UUID
+#
+    yum -y install uuid-devel.x86_64 libuuid-devel.x86_64 && \
+#
+# Docker
+#
+    yum check-update && \
+    curl -fsSL https://get.docker.com/ | sh && \
+#
+# Clean-up
+#
+    yum -y clean all && rm -rf /var/cache/yum /pkg

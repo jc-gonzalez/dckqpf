@@ -1,0 +1,72 @@
+#=========================================================i-*- dockerfile -*-==
+# VERSION:        2.1
+# DESCRIPTION:    Create image with COTS for QPF
+# AUTHOR:         J. C. Gonzalez <JCGonzalez@sciops.esa.int>
+# DATE:           2018/09/07
+# COMMENTS:
+#   This file describes how to build a container with all the COTS for QPF 2.1
+# BUILD:
+#   make -f Makefile.img DOCKERFILE=Dockerfile_qpfcore IMAGE_NAME=qpf-core:2.1
+# USAGE:
+#   docker run --rm -t -i qpf-core:2.1
+#
+# Copyright (C) 2015-2018 J C Gonzalez
+#==============================================================================
+
+# Base Docker image
+FROM qpf-cots:2.1
+MAINTAINER J C Gonzalez <JCGonzalez@sciops.esa.int>
+
+LABEL esa.euclid.soc.qla.content="QPF Core" \
+      esa.euclid.soc.qla.version="2.1" \
+      esa.euclid.soc.qla.release-date="2018-09-05"
+
+RUN yum install -y sudo && sleep 2 && \
+    groupadd sudo && \
+    usermod -aG docker eucops && \
+    usermod -aG eucops eucops && \
+    usermod -aG sudo eucops && \
+    echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers && \
+#
+# Git
+#
+    yum install -y git which && \
+#
+# Clean-up
+#
+    yum -y clean all && rm -rf /var/cache/yum /pkg
+
+USER eucops
+WORKDIR /home/eucops
+ENV LD_LIBRARY_PATH /usr/lib:/usr/lib64:/usr/local/lib64:/usr/local/lib:/usr/pgsql/lib
+RUN git clone https://github.com/jc-gonzalez/qpf.git QPF && \
+    cd QPF/scripts && ./BuildQPF.sh -c -i -w -r -p -I $(hostname -i)
+
+#    cd qpf && mkdir build && cd build && \
+#    cmake -D HMI=OFF -DCMAKE_BUILD_TYPE=Debug --graphviz=dependencies.dot .. && \
+#    make && make install 
+
+# # Use gosu to move down from ROOT to other users, without the signals trap
+# # problems of sudo
+# # First, install gosu:
+# # https://github.com/tianon/gosu/blob/master/INSTALL.md
+# ENV GOSU_VERSION 1.10
+# RUN apt-get update && \
+#     apt-get install -y wget && \
+#     set -ex; \
+#     dpkgArch="$(dpkg --print-architecture | awk -F- '{ print $NF }')"; \
+#     gosuUrl="https://github.com/tianon/gosu/releases/download/$GOSU_VERSION"; \
+#     wget -O /usr/bin/gosu "$gosuUrl/gosu-$dpkgArch"; \
+#     chmod +x /usr/bin/gosu
+# #    wget -O /tmp/gosu.asc "$gosuUrl/gosu-$dpkgArch.asc"; \
+# #    export GNUPGHOME="$(mktemp -d)"; \
+# #    gpg --keyserver ha.pool.sks-keyservers.net --recv-keys B42F6819007F00F88E364FD4036A9C25BF357DD4; \
+# #    gpg --batch --verify /tmp/gosu.asc /usr/bin/gosu; \
+# #    rm -r "$GNUPGHOME" /tmp/gosu.asc; \
+# 
+# # Then, create entry-point to run at container startup:
+# # https://denibertovic.com/posts/handling-permissions-with-docker-volumes/
+# COPY entrypoint.sh /usr/bin/entrypoint.sh
+# RUN chmod +x /usr/bin/entrypoint.sh
+# ENTRYPOINT ["/usr/bin/entrypoint.sh"]
+
