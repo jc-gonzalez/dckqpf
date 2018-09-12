@@ -76,7 +76,7 @@ LOG_FILE="dockerqpf-create-${DATE}.log"
 
 greetings () {
     say "${_ONHDR}==============================================================================="
-    say "${_ONHDR} Euclid DockerQPF Create Images"
+    say "${_ONHDR} Euclid DockerQPF -- Create Images"
     say "${_ONHDR} Version ${VERSION}"
     say "${_ONHDR} Execution time-stamp: ${DATE}"
     say "${_ONHDR}==============================================================================="
@@ -118,11 +118,11 @@ die () {
 #=== PARSE COMMAND LINE OPTIONS =====================================
 
 #- Parse command line and display grettings
-while getopts :hPCcbduo: OPT; do
+while getopts :hpCcbduo: OPT; do
     case $OPT in
         h|+h) usage
               ;;
-        P|+P) CREATE_PSQL="yes"
+        p|+p) CREATE_PSQL="yes"
               LIST_OF_ITEMS="psql ${LIST_OF_ITEMS}"
               ;;
         C|+C) CREATE_COTS="yes"
@@ -171,21 +171,21 @@ for item in ${LIST_OF_ITEMS}; do
     DCKFILE=${IMG_DCK[$item]}
 
     if [ "${DOWNLOAD}" == "yes" ]; then
-        step "- Pulling image with ${IMGDESC} image ${IMG} from NEXUS repository"
+        step "Pulling image with ${IMGDESC} image ${IMG} from NEXUS repository"
         docker pull ${NEXUS_DOCKER_URL}/${NEXUS_USER}/${IMG}
         docker tag  ${NEXUS_DOCKER_URL}/${NEXUS_USER}/${IMG} ${IMG}
         docker tag  ${NEXUS_DOCKER_URL}/${NEXUS_USER}/${IMG} ${IMGTAG}
         docker tag  ${IMG} ${IMGTAG}
     else
         if [ "${BUILD}" == "yes " ]; then
-            step "- Creating ${IMGDESC} image ${IMG}"
+            step "Creating ${IMGDESC} image ${IMG}"
             make -f Makefile.img \
                  DOCKERFILE=${DCKFILE} IMAGE_NAME=${IMG} OPTS="${CREATE_OPTS}"
         fi
     fi
 
     if [ "${UPLOAD}" == "yes" ]; then
-        step "- Pushing image with ${IMGDESC} image ${IMG} to NEXUS repository"
+        step "Pushing image with ${IMGDESC} image ${IMG} to NEXUS repository"
         docker tag  ${IMG} ${NEXUS_DOCKER_URL}/${NEXUS_USER}/${IMG}
         docker push ${NEXUS_DOCKER_URL}/${NEXUS_USER}/${IMG}
     fi
