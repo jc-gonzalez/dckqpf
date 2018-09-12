@@ -54,6 +54,9 @@ DCK_CLEAR_CONT="no"
 DCK_KILL="no"
 TEST="no"
 
+TEST_DATA_FOLDER=/data/Test_Data
+QDT_FOLDER=${TEST_DATA_FOLDER}/QDT-test
+
 src=0
 tgt=1
 
@@ -67,7 +70,7 @@ LOG_FILE="dockerqpf-launch-${DATE}.log"
 
 greetings () {
     say "${_ONHDR}==============================================================================="
-    say "${_ONHDR} Euclid DockerQPF"
+    say "${_ONHDR} Euclid DockerQPF -- Launch containers"
     say "${_ONHDR} Version ${VERSION}"
     say "${_ONHDR} Execution time-stamp: ${DATE}"
     say "${_ONHDR}==============================================================================="
@@ -75,7 +78,7 @@ greetings () {
 }
 
 usage () {
-    local opts="[ -h ] [ -P ] [ -b ] [ -C ] [ -K ] [ -z ]"
+    local opts="[ -h ] [ -P ] [ -b ] [ -C ] [ -K ] [ -z ] [ -d <data> ] [ -q <qdt> ]"
     say "Usage: ${SCRIPT_NAME} $opts"
     say "where:"
     say "  -h         Show this usage message"
@@ -84,6 +87,8 @@ usage () {
     say "  -C         Clear DB"
     say "  -K         Kill running PostgreSQL & QPF Master Core Containers"
     say "  -z         Remove old Docker Containers"
+    say "  -d <data>  Set data folder"
+    say "  -q <qdt>   Set QDT folder"
     say ""
     exit 1
 }
@@ -106,11 +111,11 @@ die () {
 #=== PARSE COMMAND LINE OPTIONS =====================================
 
 #- Parse command line and display grettings
-while getopts :hpbCKzt OPT; do
+while getopts :hpbCKztd:q: OPT; do
     case $OPT in
         h|+h) usage
               ;;
-        P|+P) LAUNCH_PSQL_SERVER="yes"
+        p|+p) LAUNCH_PSQL_SERVER="yes"
               ;;
         b|+b) INIT_QPFDB="yes"
               ;;
@@ -121,6 +126,10 @@ while getopts :hpbCKzt OPT; do
         z|+z) DCK_CLEAR_CONT="yes"
               ;;
         t|+t) TEST="yes"
+              ;;
+        d|+d) TEST_DATA_FOLDER="$OPTARG"
+              ;;
+        q|+q) QDT_FOLDER="$OPTARG"
               ;;
         *)    usage
               exit 2
@@ -150,9 +159,9 @@ VOL_MNT_QPFDATA=(qpfdata /home/${EUCUSER}/qpf/data)
 #- Binded folders
 BIND_QPFDB=(/home/${EUCUSER}/qpf/db /var/lib/postgresql/data)
 BIND_QPFCFG=($(pwd)/cfg /home/${EUCUSER}/qpf/cfg)
-BIND_QPFDATA=(/data/Test_Data/qpfwa/data /home/${EUCUSER}/qpf/data)
-BIND_QPFRUN=(/data/Test_Data/qpfwa/run /home/${EUCUSER}/qpf/run)
-BIND_QDT=(/data/Test_Data/QDT-test /home/${EUCUSER}/qpf/bin/QDT)
+BIND_QPFDATA=(${TEST_DATA_FOLDER}/qpfwa/data /home/${EUCUSER}/qpf/data)
+BIND_QPFRUN=(${TEST_DATA_FOLDER}/qpfwa/run /home/${EUCUSER}/qpf/run)
+BIND_QDT=(${QDT_FOLDER} /home/${EUCUSER}/qpf/bin/QDT)
 BIND_BIN=($(pwd)/bin /home/${EUCUSER}/bin)
 
 #- Docker Container Names
@@ -165,12 +174,12 @@ QPF_CORE=qpf-core
 #docker volume create --name=${VOL_QPFDATA[$src]}
 
 #=== Create bind mount folder in case they do not exist
-step "- Creating bind mount folders"
+step "Creating bind mount folders"
 mkdir -p ${BIND_QPFDB[$src]}
 
 #=== Kill running containers
 if [ ${DCK_KILL} == "yes" ]; then
-    step "- Killing and removing running containers"
+    step "Killing and removing running containers"
     for cnt in ${QPF_CORE} ${QPF_PGSQL} ; do
         docker inspect --format '{{.Id}}' $cnt 2>/dev/null && \
             (echo "  - Killing container $cnt . . ." ; \
@@ -181,7 +190,7 @@ fi
 
 #=== Clear Docker Containers if requested
 if [ ${DCK_CLEAR_CONT} == "yes" ]; then
-    step "- Removing old containers"
+    step "Removing old containers"
     cnts=$(docker ps -a|awk '/Exited/{print $1;}')
     if [ -n "$cnts" ]; then
         docker rm $cnts
@@ -190,7 +199,7 @@ fi
 
 #=== Run PostgreSQL container
 if [ "${LAUNCH_PSQL_SERVER}" == "yes" ]; then
-    step "- Launching PostgreSQL Server"
+    step "Launching PostgreSQL Server"
     docker run -d --name ${QPF_PGSQL} ${PSQL_SERVER_IMG}
     docker ps -a
     sleep 3
@@ -202,7 +211,7 @@ echo ${IP_PSQL} > cfg/qpfpsql.ip
 
 #=== Initialize DB if required
 if [ "${INIT_QPFDB}" == "yes" ]; then
-    step "- Creating Euclid Ops. User"
+    step "Creating Euclid Ops. User"
     cat <<EOF_PSQL | \
         docker run -i \
                --rm \
@@ -214,7 +223,7 @@ DROP DATABASE ${QPFDB};
 CREATE DATABASE ${QPFDB} OWNER ${EUCUSER};
 EOF_PSQL
 
-    step "- Initializing QPF DB"
+    step "Initializing QPF DB"
     cat qpfdb.sql | \
         docker run -i \
                --rm \
@@ -226,7 +235,7 @@ fi
 
 #=== Clear DB if requested
 if [ "${DCK_CLEAR_DB}" == "yes" ]; then
-    step "- Clear QPF database"
+    step "Clear QPF database"
 
     step "  - Cleaning up database . . ."
     if [ -f /tmp/clean-up-qpfdb.sql ]; then
@@ -270,7 +279,7 @@ EOF
 fi
 
 #=== Start QPF Core
-step "- Starting QPF Core"
+step "Starting QPF Core"
 cmd="docker run -d \
        --name ${QPF_CORE} \
        --link ${QPF_PGSQL}:${QPF_PGSQL_ALIAS} \
@@ -294,7 +303,7 @@ qpfid=$(docker ps -ql)
 
 #=== Check that everything is as expected
 if [ "${TEST}" == "yes" ]; then
-    step "- Getting some info..."
+    step "Getting some info..."
     GetInfo="docker exec $qpfid "
     cmd="$GetInfo psql -h ${IP_PSQL} -d ${QPFDB} -U ${EUCUSER} -c '\d'"
     echo $cmd
