@@ -1,6 +1,6 @@
 #!/bin/bash
 #==============================================================================
-# FILE:           DockerQPF-create.sh 
+# FILE:           DockerQPF-create.sh
 # DESCRIPTION:    Create set of Docker images to dockerized QPF
 # AUTHOR:         J. C. Gonzalez <JCGonzalez@sciops.esa.int>
 # VERSION:        2.1
@@ -119,7 +119,6 @@ die () {
 
 #- Parse command line and display grettings
 while getopts :hPCcbduo: OPT; do
-    echo "Scanning $OPT . . . "
     case $OPT in
         h|+h) usage
               ;;
@@ -174,9 +173,9 @@ for item in ${LIST_OF_ITEMS}; do
     if [ "${DOWNLOAD}" == "yes" ]; then
         step "- Pulling image with ${IMGDESC} image ${IMG} from NEXUS repository"
         docker pull ${NEXUS_DOCKER_URL}/${NEXUS_USER}/${IMG}
-        docker tag  ${NEXUS_DOCKER_URL}/${NEXUS_USER}/${IMG} ${IMG} 
-        docker tag  ${NEXUS_DOCKER_URL}/${NEXUS_USER}/${IMG} ${IMGTAG} 
-        docker tag  ${IMG} ${IMGTAG} 
+        docker tag  ${NEXUS_DOCKER_URL}/${NEXUS_USER}/${IMG} ${IMG}
+        docker tag  ${NEXUS_DOCKER_URL}/${NEXUS_USER}/${IMG} ${IMGTAG}
+        docker tag  ${IMG} ${IMGTAG}
     else
         if [ "${BUILD}" == "yes " ]; then
             step "- Creating ${IMGDESC} image ${IMG}"

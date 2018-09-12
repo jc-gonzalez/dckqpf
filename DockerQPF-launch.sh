@@ -1,8 +1,9 @@
 #!/bin/bash
 #==============================================================================
-# VERSION:        2.1
+# FILE:           DockerQPF-launch.sh
 # DESCRIPTION:    Launch set of Docker containers to run dockerized QPF
 # AUTHOR:         J. C. Gonzalez <JCGonzalez@sciops.esa.int>
+# VERSION:        2.1
 # DATE:           2018/09/07
 # COMMENTS:
 #   A set of containers from different images are launched to run a dockerized
@@ -51,6 +52,7 @@ INIT_QPFDB="no"
 DCK_CLEAR_DB="no"
 DCK_CLEAR_CONT="no"
 DCK_KILL="no"
+TEST="no"
 
 src=0
 tgt=1
@@ -77,7 +79,7 @@ usage () {
     say "Usage: ${SCRIPT_NAME} $opts"
     say "where:"
     say "  -h         Show this usage message"
-    say "  -P         Start PostgreSQL Server Container"
+    say "  -p         Start PostgreSQL Server Container"
     say "  -b         Initialize QPF DB"
     say "  -C         Clear DB"
     say "  -K         Kill running PostgreSQL & QPF Master Core Containers"
@@ -104,7 +106,7 @@ die () {
 #=== PARSE COMMAND LINE OPTIONS =====================================
 
 #- Parse command line and display grettings
-while getopts :hPbCKz OPT; do
+while getopts :hpbCKzt OPT; do
     case $OPT in
         h|+h) usage
               ;;
@@ -117,6 +119,8 @@ while getopts :hPbCKz OPT; do
         K|+K) DCK_KILL="yes"
               ;;
         z|+z) DCK_CLEAR_CONT="yes"
+              ;;
+        t|+t) TEST="yes"
               ;;
         *)    usage
               exit 2
@@ -132,7 +136,6 @@ greetings
 #=== START EXECUTION ================================================
 
 #=== Variables
-
 EUCUSER=eucops
 EUCPWD=eu314clid
 QPFDB=qpfdb
@@ -290,10 +293,12 @@ qpfid=$(docker ps -ql)
 #sleep 5
 
 #=== Check that everything is as expected
-step "- Getting some info..."
-GetInfo="docker exec $qpfid "
-cmd="$GetInfo psql -h ${IP_PSQL} -d ${QPFDB} -U ${EUCUSER} -c '\d'"
-echo $cmd
-$cmd
+if [ "${TEST}" == "yes" ]; then
+    step "- Getting some info..."
+    GetInfo="docker exec $qpfid "
+    cmd="$GetInfo psql -h ${IP_PSQL} -d ${QPFDB} -U ${EUCUSER} -c '\d'"
+    echo $cmd
+    $cmd
+fi
 
-say "- Done."
+say "Done."
