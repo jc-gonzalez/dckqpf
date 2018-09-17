@@ -177,7 +177,7 @@ for item in ${LIST_OF_ITEMS}; do
         docker tag  ${NEXUS_DOCKER_URL}/${NEXUS_USER}/${IMG} ${IMGTAG}
         docker tag  ${IMG} ${IMGTAG}
     else
-        if [ "${BUILD}" == "yes " ]; then
+        if [ "${BUILD}" == "yes" ]; then
             step "Creating ${IMGDESC} image ${IMG}"
             make -f Makefile.img \
                  DOCKERFILE=${DCKFILE} IMAGE_NAME=${IMG} OPTS="${CREATE_OPTS}"

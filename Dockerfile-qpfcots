@@ -29,12 +29,6 @@ ENV PSQL_PKGS postgresql10-devel.x86_64
 RUN mkdir /pkg
 COPY ./nanomsg-1.0.0.tar.gz /pkg/nanomsg-1.0.0.tar.gz
 
-# Create user and eucops users
-RUN useradd --create-home --shell /bin/bash user && \
-    echo 'user:password' | chpasswd && \
-    useradd --create-home --shell /bin/bash eucops && \
-    echo 'eucops:eu314clid' | chpasswd
-
 # Run COTS installation
 RUN yum update -y && \
 #

@@ -23,9 +23,13 @@ LABEL esa.euclid.soc.qla.content="QPF Core" \
 
 RUN yum install -y sudo && sleep 2 && \
     groupadd sudo && \
+    useradd --create-home --shell /bin/bash user && \
+    useradd --create-home --shell /bin/bash -u 5000 eucops && \
+    echo 'user:password'    | chpasswd && \
+    echo 'eucops:eu314clid' | chpasswd && \
     usermod -aG docker eucops && \
     usermod -aG eucops eucops && \
-    usermod -aG sudo eucops && \
+    usermod -aG sudo   eucops && \
     echo '%sudo ALL=(ALL) NOPASSWD:ALL' >> /etc/sudoers && \
 #
 # Git
